@@ -11,9 +11,12 @@ def main():
 
     bin_path = args.bin_path
 
+    alpha = 0.5
+    beta = 0.25
+    gamma = 0.25
     bcd = BCDangr(bin_path)
     print(bcd._func_list)
-    print(bcd._components)
+    print(list(bcd.get_communities(alpha, beta, gamma)))
 
 
 if __name__ == "__main__":
