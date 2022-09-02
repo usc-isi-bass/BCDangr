@@ -1,5 +1,6 @@
 import angr
 import networkx as nx
+import numpy as np
 
 from bcd.data_ref_function_pair_property_calculator import DataRefFunctionPairPropertyCalulator
 from bcd.call_function_pair_property_calculator import CallFunctionPairPropertyCalulator
@@ -30,7 +31,7 @@ class BCDangr:
 
         self._matrix_dissimilarity_score = self._compute_matrix_dissimilarity_score()
 
-        # TODO: Compute penalty matrix N
+        self._matrix_penalty = self._compute_penalty_matrix()
 
         # TODO Compute final edge weight matrix
 
@@ -56,7 +57,7 @@ class BCDangr:
 
         for i in range(self._num_funcs):
             for j in range(i + 1, self._num_funcs):
-                if len(self._drfpp.get_property(i, j)) > 0:
+                if self._drfpp.get_property(i, j) > 0:
                     drg.add_edge(i, j)
                     drg.add_edge(j, i)
         return drg
@@ -114,3 +115,12 @@ class BCDangr:
         assert all([c is not None for r in rho for c in r])
         return rho
             
+    def _compute_penalty_matrix(self):
+        N = [[None for i in range(self._num_funcs)] for j in range(self._num_funcs)]
+        for (i, j) in itertools.product(range(self._num_funcs), repeat=2):
+            if i != j:
+                N[i][j] = 1.0 / np.abs(i - j)
+            else:
+                N[i][j] = 1
+        assert all([c is not None for r in N for c in r])
+        return N
