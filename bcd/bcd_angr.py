@@ -4,6 +4,8 @@ import networkx as nx
 from bcd.data_ref_function_pair_property_calculator import DataRefFunctionPairPropertyCalulator
 from bcd.call_function_pair_property_calculator import CallFunctionPairPropertyCalulator
 
+import itertools
+
 class BCDangr:
 
     def __init__(self, bin_path):
