@@ -8,4 +8,4 @@ class DataRefFunctionPairPropertyCalulator(SymmetricFunctionPairPropertyCalculat
         func2 = self._func_list[j]
         # TODO: return data references common to func1 and func2
 
-        return []
+        return 0
