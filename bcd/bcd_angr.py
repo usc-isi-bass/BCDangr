@@ -33,10 +33,57 @@ class BCDangr:
 
         self._matrix_penalty = self._compute_penalty_matrix()
 
-        # TODO Compute final edge weight matrix
+    def get_communities(self, alpha, beta, gamma):
+        communities_iter = self._get_communities(alpha, beta, gamma)
 
-        # TODO: use Newman's algorithm to compute components
-        self._components = None
+        # Translate community back to function addresses
+        for community_tup in communities_iter:
+            yield tuple(set(self._func_list[i] for i in community_set) for community_set in community_tup)
+
+    def _get_communities(self, alpha, beta, gamma):
+        assert np.isclose(alpha + beta + gamma, 1.0), "Sum of alpha, beta and gamma should be 1, but instead it is: {}".format(alpha + beta + gamma)
+        H, W = self._calculate_decomposition_graph(alpha, beta, gamma)
+
+        def find_mve(G):
+            mve_nodes = None
+            mve_val = None
+
+            for i, j in G.edges():
+                curr_val = W[i][j]
+                if mve_val is None or mve_val > curr_val:
+                    mve_val = curr_val
+                    mve_nodes = (i, j)
+
+            return mve_nodes
+
+        communities = nx.algorithms.community.girvan_newman(H, most_valuable_edge=find_mve)
+
+        return communities
+
+
+    def _calculate_decomposition_graph(self, alpha, beta, gamma):
+        G_s = self._sequence_graph
+        G_d = self._data_reference_graph
+        G_c = self._call_graph
+
+        assert G_s.nodes() == G_d.nodes() == G_c.nodes()
+        H = nx.compose(G_s, nx.compose(G_d, G_c))
+        assert H.nodes() == G_s.nodes()
+
+        W = self._calculate_final_weight_matrix(alpha, beta, gamma)
+        return H, W
+
+    def _calculate_final_weight_matrix(self, alpha, beta, gamma):
+        N = np.array(self._matrix_penalty)
+        M_s = np.array(self._matrix_sequence)
+        M_c = np.array(self._matrix_call)
+        M_d = np.array(self._matrix_data_reference)
+        rho_d = np.array(self._matrix_dissimilarity_score)
+
+        W = np.multiply(N, alpha * M_s + beta * M_c + gamma * (np.multiply(rho_d, M_d)))
+
+        return W
+
 
     # Graph Calculation
 
