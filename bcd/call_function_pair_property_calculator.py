@@ -1,6 +1,7 @@
 
 from bcd.function_pair_property_calculator import FunctionPairPropertyCalculator
 
+
 class CallFunctionPairPropertyCalulator(FunctionPairPropertyCalculator):
 
     def _get_property(self, i, j):

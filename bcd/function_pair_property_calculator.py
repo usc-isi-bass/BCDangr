@@ -1,10 +1,11 @@
 from abc import abstractmethod
 class FunctionPairPropertyCalculator:
 
-    def __init__(self, proj, cfg, func_list):
+    def __init__(self, proj, cfg, func_list, section_offsets):
         self._proj = proj
         self._cfg = cfg
         self._func_list = func_list
+        self.section_offsets = section_offsets
 
         self._func_property_pairs = {}
 

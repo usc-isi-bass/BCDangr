@@ -1,32 +1,33 @@
 import angr
 import networkx as nx
-
+from elftools.elf.elffile import ELFFile
 from bcd.data_ref_function_pair_property_calculator import DataRefFunctionPairPropertyCalulator
 from bcd.call_function_pair_property_calculator import CallFunctionPairPropertyCalulator
-
+from bcd.sections import Section
 class BCDangr:
 
     def __init__(self, bin_path):
         self._bin_path = bin_path
+        self.elffile = ELFFile(open(bin_path, 'rb'))
         self._proj = angr.Project(bin_path, auto_load_libs=False)
-
         self._cfg = self._proj.analyses.CFGFast(normalize=True)
 
         self._func_list = sorted(self._cfg.functions.keys())
         self._num_funcs = len(self._func_list)
+        self.sections = self.elffile.iter_sections()
+        self.section_offsets = [Section(sec).compute_section_offsets() for sec in self.sections] 
+        self._drfpp = DataRefFunctionPairPropertyCalulator(self._proj, self._cfg, self._func_list, self.section_offsets).function_test()
+        self._cfpp = CallFunctionPairPropertyCalulator(self._proj, self._cfg, self._func_list, self.section_offsets)
 
-        self._drfpp = DataRefFunctionPairPropertyCalulator(self._proj, self._cfg, self._func_list)
-        self._cfpp = CallFunctionPairPropertyCalulator(self._proj, self._cfg, self._func_list)
+        #self._sequence_graph = self._compute_sequence_graph()
+        #self._data_reference_graph = self._compute_data_reference_graph()
+        #self._call_graph = self._compute_call_graph()
 
-        self._sequence_graph = self._compute_sequence_graph()
-        self._data_reference_graph = self._compute_data_reference_graph()
-        self._call_graph = self._compute_call_graph()
+        #self._matrix_sequence = self._compute_matrix_sequence()
+        #self._matrix_data_reference = self._compute_matrix_data_reference()
+        #self._matrix_call = self._compute_matrix_call()
 
-        self._matrix_sequence = self._compute_matrix_sequence()
-        self._matrix_data_reference = self._compute_matrix_data_reference()
-        self._matrix_call = self._compute_matrix_call()
-
-        self._matrix_dissimilarity_score = self._compute_matrix_dissimilarity_score()
+        #self._matrix_dissimilarity_score = self._compute_matrix_dissimilarity_score()
 
         # TODO: Compute penalty matrix N
 
