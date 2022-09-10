@@ -1,5 +1,7 @@
 import angr
+import textdistance
 import networkx as nx
+import itertools
 from elftools.elf.elffile import ELFFile
 from bcd.data_ref_function_pair_property_calculator import DataRefFunctionPairPropertyCalulator
 from bcd.call_function_pair_property_calculator import CallFunctionPairPropertyCalulator
@@ -16,18 +18,18 @@ class BCDangr:
         self._num_funcs = len(self._func_list)
         self.sections = self.elffile.iter_sections()
         self.section_offsets = [Section(sec).compute_section_offsets() for sec in self.sections] 
-        self._drfpp = DataRefFunctionPairPropertyCalulator(self._proj, self._cfg, self._func_list, self.section_offsets).function_test()
+        self._drfpp = DataRefFunctionPairPropertyCalulator(self._proj, self._cfg, self._func_list, self.section_offsets)
         self._cfpp = CallFunctionPairPropertyCalulator(self._proj, self._cfg, self._func_list, self.section_offsets)
 
-        #self._sequence_graph = self._compute_sequence_graph()
-        #self._data_reference_graph = self._compute_data_reference_graph()
-        #self._call_graph = self._compute_call_graph()
+        self._sequence_graph = self._compute_sequence_graph()
+        self._data_reference_graph = self._compute_data_reference_graph()
+        self._call_graph = self._compute_call_graph()
 
-        #self._matrix_sequence = self._compute_matrix_sequence()
-        #self._matrix_data_reference = self._compute_matrix_data_reference()
-        #self._matrix_call = self._compute_matrix_call()
+        self._matrix_sequence = self._compute_matrix_sequence()
+        self._matrix_data_reference = self._compute_matrix_data_reference()
+        self._matrix_call = self._compute_matrix_call()
 
-        #self._matrix_dissimilarity_score = self._compute_matrix_dissimilarity_score()
+        self._matrix_dissimilarity_score = self._compute_matrix_dissimilarity_score()
 
         # TODO: Compute penalty matrix N
 
@@ -51,11 +53,21 @@ class BCDangr:
 
     def _compute_data_reference_graph(self):
         drg = nx.DiGraph()
+        
         drg.add_nodes_from(range(self._num_funcs))
 
         for i in range(self._num_funcs):
             for j in range(i + 1, self._num_funcs):
-                if len(self._drfpp.get_property(i, j)) > 0:
+                #print(i)
+                #print(j)
+                dfi = self._drfpp.compute_function_data_references(self._func_list[i])
+                dfj = self._drfpp.compute_function_data_references(self._func_list[j])
+                print("look at me")
+                print(dfi)
+                print(dfj)
+                drg.nodes[i]['df'] = dfi
+                drg.nodes[j]['df'] = dfj
+                if len(self._drfpp.common_elements(dfi, dfj)) > 0:
                     drg.add_edge(i, j)
                     drg.add_edge(j, i)
         return drg
@@ -85,10 +97,8 @@ class BCDangr:
     def _compute_matrix_data_reference(self):
         m = [[None for i in range(self._num_funcs)] for j in range(self._num_funcs)]
         for (i, j) in itertools.product(range(self._num_funcs), repeat=2):
-            if self._data_reference_graph.has_edge(i, j):
-                m[i][j] = self._drfpp.get_property(i, j)
-            else:
-                m[i][j] = 0
+            m[i][j] = len(self._drfpp.get_property(i, j))
+
         assert all([c is not None for r in m for c in r])
         return m           
 
@@ -105,11 +115,20 @@ class BCDangr:
     def _compute_matrix_dissimilarity_score(self):
         rho = [[None for i in range(self._num_funcs)] for j in range(self._num_funcs)]
         for (i, j) in itertools.product(range(self._num_funcs), repeat=2):
-            if self._data_reference_graph.has_edge(i, j): # TODO Check Di or Dj have length > 0
+            Di = self._data_reference_graph.nodes[i]['df']
+            Dj = self._data_reference_graph.nodes[j]['df']
+            p = len(Di)
+            q = len(Dj)
+            #print(self._data_reference_graph.has_edge(i, j))
+            if self._data_reference_graph.has_edge(i, j) and max(p,q) >0:
                 # TODO
-                rho[i][j] = -1
+                rho[i][j] = 1 - (self.levenshtein_distance(Di,Dj)/max(p,q))
+                #print(rho[i][j])
             else:
                 rho[i][j] = 0
         assert all([c is not None for r in rho for c in r])
         return rho
             
+    def levenshtein_distance(self,arr1, arr2):
+        return textdistance.levenshtein.distance(arr1,arr2)
+

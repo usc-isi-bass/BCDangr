@@ -7,4 +7,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     bin_path = args.binary_file
     bcd = BCDangr(bin_path)
-    print(bcd._drfpp)
+    print(bcd._matrix_dissimilarity_score)
