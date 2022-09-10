@@ -23,7 +23,7 @@ def test001():
     sections = elffile.iter_sections()
     section_offsets = [Section(sec).compute_section_offsets() for sec in sections]
     drfpp = DataRefFunctionPairPropertyCalulator(proj, cfg, func_list, section_offsets)
-    
+
     p = _func_name_get_property('f1', 'f2', func_name_to_index, drfpp)
     assert_equal(p, 0)
 
@@ -53,7 +53,7 @@ def test001():
 
     p = _func_name_get_property('f6', 'f9', func_name_to_index, drfpp)
     assert_equal(p, 3)
-    
+
 
 def _func_name_get_property(func1_name, func2_name, func_name_to_index, drfpp):
     i = func_name_to_index[func1_name]
