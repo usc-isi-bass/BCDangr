@@ -71,9 +71,9 @@ class BCDangr:
         G_d = self._data_reference_graph
         G_c = self._call_graph
 
-        assert G_s.nodes() == G_d.nodes() == G_c.nodes()
+        assert set(G_s.nodes()) == set(G_d.nodes()) == set(G_c.nodes()), "Gs: {} Gd: {} Gc: {}".format(G_s.nodes(), G_d.nodes(), G_c.nodes())
         H = nx.compose(G_s, nx.compose(G_d, G_c))
-        assert H.nodes() == G_s.nodes()
+        assert set(H.nodes()) == set(G_s.nodes())
 
         W = self._calculate_final_weight_matrix(alpha, beta, gamma)
         return H, W
