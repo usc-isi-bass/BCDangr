@@ -38,15 +38,13 @@ class DataRefFunctionPairPropertyCalulator(SymmetricFunctionPairPropertyCalculat
         base_address = self._proj.loader.main_object.min_addr
         #print(hex(base_address))
         instructions = []
-        cfg = self._proj.analyses.CFGEmulated(start=func_address, call_depth=0, normalize=True)
-
+        func = self._cfg.functions.function(addr=func_address)
+        func_blocks = sorted(func.blocks, key=lambda b: b.addr) # Apparrently blocks aren't sorted by default
         
-        for node in cfg.graph.nodes():
-            #print(node.addr)
-            if node.block is not None:
-                for ins in node.block.capstone.insns:
+        for block in func_blocks:
+            for ins in block.capstone.insns:
                     
-                    instructions.append(ins)
+                instructions.append(ins)
 
         for instruct in instructions:
             if 'rip' in instruct.op_str and '[' in instruct.op_str :
@@ -56,7 +54,6 @@ class DataRefFunctionPairPropertyCalulator(SymmetricFunctionPairPropertyCalculat
                     if 'rip' in part:
                         whole_address = part.split("[")[-1][:-1]
                         if '+' in whole_address:
-                            #print(whole_address)
                             if instructions.index(instruct)+1 < len(instructions):
                                 offset = whole_address.split("+")[-1].strip()
                                 rip = instructions[instructions.index(instruct)+1].address
