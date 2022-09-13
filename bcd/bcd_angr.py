@@ -124,9 +124,6 @@ class BCDangr:
                 #print(j)
                 dfi = self._drfpp.compute_function_data_references(self._func_list[i])
                 dfj = self._drfpp.compute_function_data_references(self._func_list[j])
-                print("look at me")
-                print(dfi)
-                print(dfj)
                 drg.nodes[i]['df'] = dfi
                 drg.nodes[j]['df'] = dfj
                 if len(self._drfpp.common_elements(dfi, dfj)) > 0:
