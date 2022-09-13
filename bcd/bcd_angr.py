@@ -157,7 +157,7 @@ class BCDangr:
     def _compute_matrix_call(self):
         m = [[None for i in range(self._num_funcs)] for j in range(self._num_funcs)]
         for (i, j) in itertools.product(range(self._num_funcs), repeat=2):
-            if self._data_reference_graph.has_edge(i, j):
+            if self._call_graph.has_edge(i, j):
                 m[i][j] = self._cfpp.get_property(i, j)
             else:
                 m[i][j] = 0
