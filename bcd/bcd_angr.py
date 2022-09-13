@@ -13,11 +13,21 @@ import itertools
 
 class BCDangr:
 
-    def __init__(self, bin_path):
+    def __init__(self, bin_path, proj=None, cfg=None, elffile=None):
         self._bin_path = bin_path
-        self.elffile = ELFFile(open(bin_path, 'rb'))
-        self._proj = angr.Project(bin_path, auto_load_libs=False)
-        self._cfg = self._proj.analyses.CFGFast(normalize=True)
+        if proj is None:
+            self._proj = angr.Project(bin_path, auto_load_libs=False)
+        else:
+            self._proj = proj
+        if cfg is None:
+            self._cfg = self._proj.analyses.CFGFast(normalize=True)
+        else:
+            self._cfg = cfg
+        if elffile is None:
+            self.elffile = ELFFile(open(bin_path, 'rb'))
+        else:
+            self.elffile = elffile
+
 
         self._func_list = sorted(self._cfg.functions.keys())
         self._num_funcs = len(self._func_list)
