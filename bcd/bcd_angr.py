@@ -122,11 +122,11 @@ class BCDangr:
             for j in range(i + 1, self._num_funcs):
                 #print(i)
                 #print(j)
-                dfi = self._drfpp.compute_function_data_references(self._func_list[i])
-                dfj = self._drfpp.compute_function_data_references(self._func_list[j])
-                drg.nodes[i]['df'] = dfi
-                drg.nodes[j]['df'] = dfj
-                if len(self._drfpp.common_elements(dfi, dfj)) > 0:
+                #dfi = self._drfpp.compute_function_data_references(self._func_list[i])
+                #dfj = self._drfpp.compute_function_data_references(self._func_list[j])
+                #drg.nodes[i]['df'] = dfi
+                #drg.nodes[j]['df'] = dfj
+                if len(self._drfpp.get_property(i, j)) > 0:
                     drg.add_edge(i, j)
                     drg.add_edge(j, i)
         return drg
@@ -156,7 +156,10 @@ class BCDangr:
     def _compute_matrix_data_reference(self):
         m = [[None for i in range(self._num_funcs)] for j in range(self._num_funcs)]
         for (i, j) in itertools.product(range(self._num_funcs), repeat=2):
-            m[i][j] = len(self._drfpp.get_property(i, j))
+            if self._data_reference_graph.has_edge(i, j):
+                m[i][j] = len(self._drfpp.get_property(i, j))
+            else:
+                m[i][j] = 0
 
         assert all([c is not None for r in m for c in r])
         return m           
@@ -174,13 +177,12 @@ class BCDangr:
     def _compute_matrix_dissimilarity_score(self):
         rho = [[None for i in range(self._num_funcs)] for j in range(self._num_funcs)]
         for (i, j) in itertools.product(range(self._num_funcs), repeat=2):
-            Di = self._data_reference_graph.nodes[i]['df']
-            Dj = self._data_reference_graph.nodes[j]['df']
+            Di = self._drfpp.compute_function_data_references(self._func_list[i])
+            Dj = self._drfpp.compute_function_data_references(self._func_list[j])
             p = len(Di)
             q = len(Dj)
             #print(self._data_reference_graph.has_edge(i, j))
-            if self._data_reference_graph.has_edge(i, j) and max(p,q) >0:
-                # TODO
+            if self._data_reference_graph.has_edge(i, j) and max(p,q) > 0:
                 rho[i][j] = 1 - (self.levenshtein_distance(Di,Dj)/max(p,q))
                 #print(rho[i][j])
             else:
