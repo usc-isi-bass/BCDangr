@@ -32,7 +32,7 @@ class BCDangr:
         self._func_list = sorted(self._cfg.functions.keys())
         self._num_funcs = len(self._func_list)
         self.sections = self.elffile.iter_sections()
-        self.section_offsets = [Section(sec).compute_section_offsets() for sec in self.sections] 
+        self.section_offsets = [Section(sec).compute_section_offsets() for sec in self.sections]
         self._drfpp = DataRefFunctionPairPropertyCalulator(self._proj, self._cfg, self._func_list, self.section_offsets)
         self._cfpp = CallFunctionPairPropertyCalulator(self._proj, self._cfg, self._func_list, self.section_offsets)
 
@@ -58,17 +58,10 @@ class BCDangr:
     def _get_communities(self, alpha, beta, gamma):
         assert np.isclose(alpha + beta + gamma, 1.0), "Sum of alpha, beta and gamma should be 1, but instead it is: {}".format(alpha + beta + gamma)
         H, W = self._calculate_decomposition_graph(alpha, beta, gamma)
-
+        nx.set_edge_attributes(H, {(u, v): W[u][v] for u, v in H.edges()}, "weight")
         def find_mve(G):
-            mve_nodes = None
-            mve_val = None
-
-            for i, j in G.edges():
-                curr_val = W[i][j]
-                if mve_val is None or mve_val > curr_val:
-                    mve_val = curr_val
-                    mve_nodes = (i, j)
-
+            u, v, w = max(G.edges(data="weight"), key=itemgetter(2))
+            mve_nodes = (u, v)
             return mve_nodes
 
         communities = nx.algorithms.community.girvan_newman(H, most_valuable_edge=find_mve)
@@ -115,7 +108,7 @@ class BCDangr:
 
     def _compute_data_reference_graph(self):
         drg = nx.DiGraph()
-        
+
         drg.add_nodes_from(range(self._num_funcs))
 
         for i in range(self._num_funcs):
@@ -162,7 +155,7 @@ class BCDangr:
                 m[i][j] = 0
 
         assert all([c is not None for r in m for c in r])
-        return m           
+        return m
 
     def _compute_matrix_call(self):
         m = [[None for i in range(self._num_funcs)] for j in range(self._num_funcs)]
@@ -189,7 +182,7 @@ class BCDangr:
                 rho[i][j] = 0
         assert all([c is not None for r in rho for c in r])
         return rho
-            
+
     def _compute_penalty_matrix(self):
         N = [[None for i in range(self._num_funcs)] for j in range(self._num_funcs)]
         for (i, j) in itertools.product(range(self._num_funcs), repeat=2):
