@@ -47,11 +47,11 @@ class DataRefExtraction:
                                 data_reference = rip+new_offset-base_address
                                 if self.check_validity_data_references(hex(data_reference), sec_offsets):
                                     function_references.append(data_reference)
-        function_references.sort()
+        #function_references.sort()
         #print("it is here")
         #print(function_references)
-        func_references = list(set(function_references))
-        return func_references
+        #func_references = list(set(function_references))
+        return function_references
 
     def dic_section_offsets(self):
 
