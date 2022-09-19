@@ -13,8 +13,8 @@ class DataRefFunctionPairPropertyCalulator(SymmetricFunctionPairPropertyCalculat
     def _get_property(self, i, j):
         func1 = self._func_list[i]
         func2 = self._func_list[j]
-        func1_df = self.compute_function_data_references(func1)
-        func2_df = self.compute_function_data_references(func2)
+        func1_df = set(self.compute_function_data_references(func1))
+        func2_df = set(self.compute_function_data_references(func2))
 
         return self.common_elements(func1_df, func2_df)
 
