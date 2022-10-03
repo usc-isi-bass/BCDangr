@@ -70,7 +70,8 @@ class BCDangr:
             mve_nodes = (u, v)
             return mve_nodes
 
-        communities = nx.algorithms.community.girvan_newman(H, most_valuable_edge=find_mve)
+        #communities = nx.algorithms.community.girvan_newman(H, most_valuable_edge=find_mve)
+        communities = iter([nx.algorithms.community.greedy_modularity_communities(H, weight='weight')])
 
         return communities
 
