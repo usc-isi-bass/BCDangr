@@ -64,7 +64,7 @@ class BCDangr:
     def _get_communities(self, alpha, beta, gamma):
         assert np.isclose(alpha + beta + gamma, 1.0), "Sum of alpha, beta and gamma should be 1, but instead it is: {}".format(alpha + beta + gamma)
         H, W = self._calculate_decomposition_graph(alpha, beta, gamma)
-        nx.set_edge_attributes(H, {(u, v): W[u][v] for u, v in H.edges()}, "weight")
+        nx.set_edge_attributes(H, {(u, v): {'weight':W[u][v]} for u, v in H.edges()})
         def find_mve(G):
             u, v, w = max(G.edges(data="weight"), key=itemgetter(2))
             mve_nodes = (u, v)
