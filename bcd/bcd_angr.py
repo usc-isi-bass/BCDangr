@@ -29,8 +29,11 @@ class BCDangr:
         else:
             self.elffile = elffile
 
+        self.filter_funcs()
+
 
         self._func_list = sorted(self._cfg.functions.keys())
+        print("Num functions: {}".format(len(self._func_list)))
         self._num_funcs = len(self._func_list)
         self.sections = self.elffile.iter_sections()
         self.section_offsets = [Section(sec).compute_section_offsets() for sec in self.sections]
@@ -49,6 +52,75 @@ class BCDangr:
 
         self._matrix_penalty = self._compute_penalty_matrix()
 
+    def filter_funcs(self):
+        func1 = self._cfg.functions.function(name='_Z24pos_get_current_locationv')
+        func2 = self._cfg.functions.function(name='_Z25servo_autocode_servo_move13PosOutputData')
+
+        func1_node = self._cfg.get_any_node(func1.addr)
+        func2_node = self._cfg.get_any_node(func2.addr)
+        visited = set()
+        whitelist_forward = set()
+        whitelist_backward = set()
+
+        self.visit_forward(func1_node, whitelist_forward, visited)
+        print("FORWARD:")
+        for addr in whitelist_forward:
+            func = self._cfg.functions.function(addr=addr)
+            print("{}@0x{:x}".format(func.name, addr))
+        print("")
+
+        self.visit_backward(func2_node, whitelist_backward, visited)
+        print("BACKWARD:")
+        for addr in whitelist_backward:
+            func = self._cfg.functions.function(addr=addr)
+            print("{}@0x{:x}".format(func.name, addr))
+        print("")
+
+        whitelist = whitelist_forward & whitelist_backward
+        print("WHITELIST:")
+        for addr in whitelist:
+            func = self._cfg.functions.function(addr=addr)
+            print("{}@0x{:x}".format(func.name, addr))
+        print("")
+
+
+        
+
+    def visit_forward(self, node, whitelist, visited):
+        node_func = self._cfg.functions.function(addr=node.function_address)
+        whitelist.add(node_func.addr)
+        succs = self._cfg.model.get_successors_and_jumpkind(node, excluding_fakeret=False)
+        for succ, jumpkind in succs:
+            if succ.addr in visited:
+                continue
+            if jumpkind == 'Ijk_Call':
+                new_whitelist = self.add_recursive(succ.addr)
+                whitelist.update(new_whitelist)
+            else:
+                self.visit_forward(succ, whitelist, visited | set([succ.addr]))
+
+    def visit_backward(self, node, whitelist, visited):
+        node_func = self._cfg.functions.function(addr=node.function_address)
+        whitelist.add(node_func.addr)
+        print("back visit: 0x{:x} @ {}@0x{:x}".format(node.addr, node_func.name, node_func.addr))
+        preds = self._cfg.model.get_predecessors_and_jumpkind(node, excluding_fakeret=False)
+        for pred, jumpkind in preds:
+            if pred.addr in visited:
+                continue
+            pred_func = self._cfg.functions.function(addr=pred.function_address)
+            print("pred: 0x{:x} @ {}@0x{:x} JK: {}".format(pred.addr, pred_func.name, pred_func.addr, jumpkind))
+            if jumpkind == 'Ijk_Ret':
+                pred_func = self._cfg.functions.function(addr=pred.function_address)
+                new_whitelist = self.add_recursive(pred_func.addr)
+                whitelist.update(new_whitelist)
+            else:
+                self.visit_backward(pred, whitelist, visited | set([pred.addr]))
+
+
+    def add_recursive(self, func_addr):
+        return nx.descendants(self._proj.kb.callgraph, func_addr)
+        
+
     def get_communities(self, alpha, beta, gamma):
         communities_iter = self._get_communities(alpha, beta, gamma)
 
@@ -61,10 +133,11 @@ class BCDangr:
         H, W = self._calculate_decomposition_graph(alpha, beta, gamma)
         nx.set_edge_attributes(H, {(u, v): W[u][v] for u, v in H.edges()}, "weight")
         def find_mve(G):
-            u, v, w = max(G.edges(data="weight"), key=itemgetter(2))
+            u, v, w = min(G.edges(data="weight"), key=itemgetter(2))
             mve_nodes = (u, v)
             return mve_nodes
-
+        u, v = find_mve(H)
+        #print("MVE: {} {}".format((u, v), W[u][v]))
         communities = nx.algorithms.community.girvan_newman(H, most_valuable_edge=find_mve)
 
         return communities
@@ -80,6 +153,12 @@ class BCDangr:
         assert set(H.nodes()) == set(G_s.nodes())
 
         W = self._calculate_final_weight_matrix(alpha, beta, gamma)
+        for (i, j) in itertools.product(range(self._num_funcs), repeat=2):
+            func_addr_i = self._func_list[i]
+            func_addr_j = self._func_list[j]
+            func_i = self._cfg.functions.function(addr=func_addr_i)
+            func_j = self._cfg.functions.function(addr=func_addr_j)
+            print("    {}@0x{:x} --> {}@0x{:x} : {}".format(func_i.name, func_addr_i, func_j.name, func_addr_j, W[i][j]))
         return H, W
 
     def _calculate_final_weight_matrix(self, alpha, beta, gamma):
