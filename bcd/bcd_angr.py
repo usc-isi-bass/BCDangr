@@ -30,7 +30,12 @@ class BCDangr:
             self.elffile = elffile
 
 
-        self._func_list = sorted(self._cfg.functions.keys())
+        func_list = []
+        for func_addr, func in self._cfg.functions.items():
+            if not (func.alignment or func.is_plt or func.is_simprocedure):
+                func_list.append(func_addr)
+
+        self._func_list = sorted(func_list)
         self._num_funcs = len(self._func_list)
         self.sections = self.elffile.iter_sections()
         self.section_offsets = [Section(sec).compute_section_offsets() for sec in self.sections]
