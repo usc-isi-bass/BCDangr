@@ -1,5 +1,6 @@
 import argparse
 import angr
+import networkx as nx
 
 from bcd.bcd_angr import BCDangr
 
@@ -16,21 +17,33 @@ def main():
     proj = angr.Project(bin_path, auto_load_libs=False)
     cfg = proj.analyses.CFGFast(normalize=True)
     print("Created CFG")
+    callgraph = proj.kb.callgraph
 
     alpha = 0.5
     beta = 0.25
     gamma = 0.25
     bcd = BCDangr(bin_path, proj=proj, cfg=cfg)
 
+    community_graph = nx.DiGraph(callgraph)
+    func_addrs = sorted(set(community_graph.nodes()))
+    for addr in func_addrs:
+        if addr not in bcd._func_list:
+            community_graph.remove_node(addr)
+
     for break_counter, communities_set in enumerate(bcd.get_communities(alpha, beta, gamma)):
         print("COMMUNITIES SET: {}".format(len(communities_set)))
         for i, community in enumerate(communities_set):
+            sorted_community = sorted(community)
             print("  Community: {} / {} size: {}".format(i, len(communities_set), len(community)))
-            for func_addr in sorted(community):
+            for func_addr in sorted_community:
                 func = cfg.functions.function(addr=func_addr)
                 print("    {}@0x{:x}".format(func.name, func_addr))
+            first_addr = sorted_community[0]
+            for func_addr in sorted_community[1:]:
+                community_graph = nx.contracted_nodes(community_graph, first_addr, func_addr, copy=True)
         if break_limit is not None and break_counter >= break_limit:
             break
+    nx.drawing.nx_pydot.write_dot(community_graph, 'community_graph.dot')
 
 
 if __name__ == "__main__":
