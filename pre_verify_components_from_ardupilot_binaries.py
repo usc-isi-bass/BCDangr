@@ -12,6 +12,7 @@ def check_contain_dwarf(binary):
         return elffile
 
 def extract_die_tree(filename):
+    # it should continue till find the first compile_unit (fix bug)
     proj = angr.Project(filename)
     
     cu_dies = {}
@@ -32,26 +33,45 @@ def extract_die_tree(filename):
             
             for die in CU.iter_DIEs():
                 if die.tag == 'DW_TAG_subprogram':
+
+                    die_series_compilation_unit = ""
                     #print(die)
                     #print(die.get_parent())
+
                     func_name = return_name(die)
-                    compile_unit_name = return_name(die.get_parent())
-                    if compile_unit_name is not None and func_name is not None:
-                        if compile_unit_name.endswith(".cpp") or compile_unit_name.endswith(".c"):
-                            print(compile_unit_name)
-                            print(func_name)
-                            function_address = find_function_address(proj, func_name)
-
-                            cu_dies[compile_unit_name] = (func_name, function_address)
-
-                    #print(func_name)
-                    #print(compile_unit_name)
+                    parent = die.get_parent()
+                    compile_unit_name = return_name(parent)
                     
-            #print("*************************")
-    
-    return cu_dies
+                    if func_name is not None and compile_unit_name is not None:
+                        die_series_compilation_unit = die_series_compilation_unit+"/"+compile_unit_name
+                        #print(compile_unit_name)
+                        die = parent
+                        while not compile_unit_name.endswith(".cpp") :
+                            parent = die.get_parent()
+                            compile_unit_name = return_name(parent)
+                            if compile_unit_name is None:
+                                break
+                            if not compile_unit_name.endswith(".cpp"):
+                                die_series_compilation_unit= die_series_compilation_unit+"/"+compile_unit_name
+                                #print(compile_unit_name)
+                            else:
+                                compile_unit_name = compile_unit_name.split("/")[-1]
+                                die_series_compilation_unit= die_series_compilation_unit+"/"+compile_unit_name
+
+                            die = parent
+                            
+                        print(func_name)
+                        function_address = find_function_address(proj, func_name)
+                        cu_dies[die_series_compilation_unit] = (func_name, function_address)
+                        print(die_series_compilation_unit)
+                        print((func_name, function_address))
+
+    return cu_dies      
+
         
 def return_name(_die):
+    if _die is None:
+        return None
     for att in _die.attributes:
         if att == 'DW_AT_name':
             return _die.attributes[att].value.decode("utf-8")
@@ -73,7 +93,7 @@ def return_if_function_external(die_object):
 
 
 def find_function_address(proj, function):
-    print(function)
+    #print(function)
     function_symbol = proj.loader.find_symbol(function)
     if function_symbol is not None:
         return hex(function_symbol.rebased_addr)

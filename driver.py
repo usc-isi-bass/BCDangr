@@ -43,8 +43,8 @@ def main():
             
             for func_addr in sorted_community:
                 func = cfg.functions.function(addr=func_addr)
-                print("    {}@0x{:x}".format(func.name, func_addr))
-                funcs.append((func.name, func_addr))
+                print("    {}@0x{:x}".format(func.demangled_name, func_addr))
+                funcs.append((func.demangled_name, func_addr))
             communities_functions[(i,len(communities_set), len(community))] = funcs
             first_addr = sorted_community[0]
             for func_addr in sorted_community[1:]:
