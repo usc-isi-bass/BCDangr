@@ -1,6 +1,7 @@
 import argparse
 import angr
 import networkx as nx
+import joblib
 
 from bcd.bcd_angr import BCDangr
 
@@ -31,14 +32,20 @@ def main():
             community_graph.remove_node(addr)
 
     relabel_map = {}
+    communities_functions = {}
     for break_counter, communities_set in enumerate(bcd.get_communities(alpha, beta, gamma)):
         print("COMMUNITIES SET: {}".format(len(communities_set)))
         for i, community in enumerate(communities_set):
+            
+            funcs = []
             sorted_community = sorted(community)
             print("  Community: {} / {} size: {}".format(i, len(communities_set), len(community)))
+            
             for func_addr in sorted_community:
                 func = cfg.functions.function(addr=func_addr)
-                print("    {}@0x{:x}".format(func.name, func_addr))
+                print("    {}@0x{:x}".format(func.demangled_name, func_addr))
+                funcs.append((func.demangled_name, func_addr))
+            communities_functions[(i,len(communities_set), len(community))] = funcs
             first_addr = sorted_community[0]
             relabel_map[first_addr] = i
             for func_addr in sorted_community[1:]:
@@ -46,6 +53,7 @@ def main():
         if break_limit is not None and break_counter >= break_limit:
             break
     community_graph = nx.relabel_nodes(community_graph, relabel_map)
+    joblib.dump(communities_functions, 'communities_functions.pkl')
     nx.drawing.nx_pydot.write_dot(community_graph, 'community_graph.dot')
 
 
