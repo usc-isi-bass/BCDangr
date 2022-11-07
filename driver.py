@@ -30,6 +30,7 @@ def main():
         if addr not in bcd._func_list:
             community_graph.remove_node(addr)
 
+    relabel_map = {}
     for break_counter, communities_set in enumerate(bcd.get_communities(alpha, beta, gamma)):
         print("COMMUNITIES SET: {}".format(len(communities_set)))
         for i, community in enumerate(communities_set):
@@ -39,10 +40,12 @@ def main():
                 func = cfg.functions.function(addr=func_addr)
                 print("    {}@0x{:x}".format(func.name, func_addr))
             first_addr = sorted_community[0]
+            relabel_map[first_addr] = i
             for func_addr in sorted_community[1:]:
                 community_graph = nx.contracted_nodes(community_graph, first_addr, func_addr, copy=True)
         if break_limit is not None and break_counter >= break_limit:
             break
+    community_graph = nx.relabel_nodes(community_graph, relabel_map)
     nx.drawing.nx_pydot.write_dot(community_graph, 'community_graph.dot')
 
 
