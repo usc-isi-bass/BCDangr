@@ -39,7 +39,7 @@ class BCDangr:
         self._num_funcs = len(self._func_list)
         self.sections = self.elffile.iter_sections()
         self.section_offsets = [Section(sec).compute_section_offsets() for sec in self.sections]
-        self._drfpp = DataRefFunctionPairPropertyCalulator(self._proj, self._cfg, self._func_list, self.section_offsets)
+        self._drfpp = DataRefFunctionPairPropertyCalulator(self._bin_path, self._proj, self._cfg, self._func_list, self.section_offsets)
         self._cfpp = CallFunctionPairPropertyCalulator(self._proj, self._cfg, self._func_list, self.section_offsets)
 
         self._sequence_graph = self._compute_sequence_graph()

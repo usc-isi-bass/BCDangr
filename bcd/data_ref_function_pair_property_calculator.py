@@ -6,9 +6,9 @@ from elftools.elf.elffile import ELFFile
 
 class DataRefFunctionPairPropertyCalulator(SymmetricFunctionPairPropertyCalculator, DataRefExtraction):
 
-    def __init__(self, proj, cfg, func_list, section_offsets):
+    def __init__(self, bin_path,  proj, cfg, func_list, section_offsets):
         SymmetricFunctionPairPropertyCalculator.__init__(self, proj, cfg, func_list, section_offsets)
-        DataRefExtraction.__init__(self, proj, cfg, func_list, section_offsets)
+        DataRefExtraction.__init__(self, bin_path,  proj, cfg, func_list, section_offsets)
 
     def _get_property(self, i, j):
         func1 = self._func_list[i]

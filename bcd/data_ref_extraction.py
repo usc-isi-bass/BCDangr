@@ -1,7 +1,10 @@
 
+from elftools.elf.elffile import ELFFile
+
 class DataRefExtraction:
 
-    def __init__(self, proj, cfg, func_list, section_offsets):
+    def __init__(self, bin_path, proj, cfg, func_list, section_offsets):
+        self._bin_path = bin_path
         self._proj = proj
         self._cfg = cfg
         self.func_list = func_list
@@ -17,8 +20,9 @@ class DataRefExtraction:
         return func_references
 
     def _compute_function_data_references(self, func_address):
-        function_references = []
+        
         #print(self._func_list)
+        func_refs = []
         sec_offsets = self.dic_section_offsets()
         #print(sec_offsets)
         base_address = self._proj.loader.main_object.min_addr
@@ -29,9 +33,21 @@ class DataRefExtraction:
         
         for block in func_blocks:
             for ins in block.capstone.insns:
-                    
                 instructions.append(ins)
 
+        with open(self._bin_path, 'rb') as f:
+            elffile = ELFFile(f)
+            arch = elffile.get_machine_arch()
+            if arch == 'x64':
+                func_refs = self.function_references_for_amd(instructions, base_address, sec_offsets)
+            elif arch == 'ARM':
+                func_refs = self.function_references_for_arm(instructions, base_address, sec_offsets)
+
+        return func_refs
+
+
+    def function_references_for_amd(self, instructions, base_adrs, sec_offsets):
+        function_references = []
         for instruct in instructions:
             if 'rip' in instruct.op_str and '[' in instruct.op_str :
                 mnemonic = instruct.op_str
@@ -44,14 +60,47 @@ class DataRefExtraction:
                                 offset = whole_address.split("+")[-1].strip()
                                 rip = instructions[instructions.index(instruct)+1].address
                                 new_offset = int(offset, 16)
-                                data_reference = rip+new_offset-base_address
+                                data_reference = rip+new_offset-base_adrs
                                 if self.check_validity_data_references(hex(data_reference), sec_offsets):
                                     function_references.append(data_reference)
-        #function_references.sort()
-        #print("it is here")
-        #print(function_references)
-        #func_references = list(set(function_references))
+
         return function_references
+    
+    def function_references_for_arm(self, instrucs, base_adr, sec_offsets):
+        func_refs = []
+        for instruct in instrucs:
+            #print(instruct)
+            if 'pc' in instruct.op_str and '[' in instruct.op_str :
+                mnemonic = instruct.op_str
+                parts = mnemonic.split("[")
+                #print(parts)
+                for part in parts:
+                    if 'pc' in part:
+                        #print(instruct)
+                        #part = part.replace("[","")
+                        part = part.replace("]","")
+                        mnemo_parts = part.split(",")
+                        if len(mnemo_parts) >1:
+                            offset = mnemo_parts[-1].strip().replace("#",'')
+                            #print(offset)
+
+                        if instrucs.index(instruct)+1 < len(instrucs) and offset.startswith('0x'):
+                            pc = instrucs[instrucs.index(instruct)+1].address
+                            #print("this is pc")
+                            #print(pc)
+                            new_offset = int(offset, 16)
+                            #print("this is new offset")
+                            #print(new_offset)
+                            data_reference = pc+new_offset-base_adr
+                            #print(data_reference)
+                            if self.check_validity_data_references(hex(data_reference), sec_offsets):
+                                #print("valid")
+                                func_refs.append(data_reference)
+
+            
+        #print(func_refs)
+        return func_refs
+
 
     def dic_section_offsets(self):
 
