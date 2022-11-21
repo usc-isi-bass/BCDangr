@@ -55,11 +55,8 @@ class BCDangr:
         self._matrix_penalty = self._compute_penalty_matrix()
 
     def get_communities(self, alpha, beta, gamma):
-        communities_iter = self._get_communities(alpha, beta, gamma)
-
-        # Translate community back to function addresses
-        for community_tup in communities_iter:
-            yield tuple(set(self._func_list[i] for i in community_set) for community_set in community_tup)
+        community_tup = self._get_communities(alpha, beta, gamma)
+        return tuple(set(self._func_list[i] for i in community_set) for community_set in community_tup)
 
     def _get_communities(self, alpha, beta, gamma):
         assert np.isclose(alpha + beta + gamma, 1.0), "Sum of alpha, beta and gamma should be 1, but instead it is: {}".format(alpha + beta + gamma)
@@ -71,7 +68,7 @@ class BCDangr:
             return mve_nodes
 
         #communities = nx.algorithms.community.girvan_newman(H, most_valuable_edge=find_mve)
-        communities = iter([nx.algorithms.community.greedy_modularity_communities(H, weight='weight')])
+        communities = nx.algorithms.community.greedy_modularity_communities(H, weight='weight')
 
         return communities
 
