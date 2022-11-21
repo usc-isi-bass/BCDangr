@@ -112,16 +112,25 @@ class DataRefExtraction:
 
     def check_validity_data_references(self, data_ref, dictionary_sections):
         # This function checks if a data reference exists in one of the three sections(.bss, .rodata, .data)
-        bss_low_address = dictionary_sections['.bss'][0]
-        bss_high_address = dictionary_sections['.bss'][1]
-        rodata_low_address = dictionary_sections['.rodata'][0]
-        rodata_high_address = dictionary_sections['.rodata'][1]
-        data_low_address = dictionary_sections['.data'][0]
-        data_high_address = dictionary_sections['.data'][1]
-        A = (data_ref>=bss_low_address and data_ref<=bss_high_address)
-        B = (data_ref>=rodata_low_address and data_ref<=rodata_high_address)
-        C = (data_ref>=data_low_address and data_ref<=data_high_address)
+        A = False
+        B = False
+        C = False
+        if '.bss' in list(dictionary_sections.keys()):
+            bss_low_address = dictionary_sections['.bss'][0]
+            bss_high_address = dictionary_sections['.bss'][1]
+            A = (data_ref>=bss_low_address and data_ref<=bss_high_address)
+        
+        if '.rodata' in list(dictionary_sections.keys()):
+            rodata_low_address = dictionary_sections['.rodata'][0]
+            rodata_high_address = dictionary_sections['.rodata'][1]
+            B = (data_ref>=rodata_low_address and data_ref<=rodata_high_address)
+        
+        if '.data' in list(dictionary_sections.keys()): 
+            data_low_address = dictionary_sections['.data'][0]
+            data_high_address = dictionary_sections['.data'][1]
+            C = (data_ref>=data_low_address and data_ref<=data_high_address)
 
+        
         if A or B or C :
             return True
         else:
