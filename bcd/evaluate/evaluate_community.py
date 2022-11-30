@@ -67,7 +67,7 @@ class Evaluate_Community:
 
     def compute_score_community(self, community):
         #compute the score for a community
-        number_instances, num = find_unique_instances(community)
+        number_instances, num = self.find_unique_instances(community)
         score = num - number_instances
 
         if num != 0:
